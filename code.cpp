@@ -1,25 +1,35 @@
 #include<iostream>
 #include<string>
 using namespace std;
-class node {
-public:
-	int data;
-	node* next;
-
+struct userPost{
+	string date;
+	string time;
+	string content;
 };
-class LinkedList {
-	node* head, * temp, * temp2;
+class userNode {
 public:
-	LinkedList() {
+	string name;
+	string password;
+	string city;
+	userNode* next;
+	userNode(string name, string password, string city) {
+		this->name = name;
+		this->city = city;
+		this->password = password;
+		next = nullptr;
+	}
+};
+class userList {
+	userNode* head, * temp, * temp2;
+public:
+	userList() {
 		head = nullptr;
 		temp = nullptr;
 		temp2 = nullptr;
 	}
-	void insertNodeAtEnd(int data) //O(n)
+	void insertUserAtEnd(string name, string password, string city) //O(n)
 	{
-		node* n = new node;
-		n->data = data;
-		n->next = nullptr;
+		userNode* n = new userNode(name,password,city);
 		if (head == nullptr) {
 			head = n;
 		}
@@ -31,20 +41,18 @@ public:
 			temp->next = n;
 		}
 	}
-	void insertNodeAtBeginning(int data) // O(1)
+	void insertUserAtBeginning(string name, string password, string city) // O(1)
 	{
-		node* n = new node;
-		n->data = data;
+		userNode* n = new userNode(name, password, city);
 		n->next = head;
 		head = n;
 	}
-	void insertNodeAtMiddle(int data, int key) //O(n)
+	void insertuserNodeAtMiddle(string name, string password, string city, string keyName) //O(n)
 	{
-		node* n = new node;
-		n->data = data;
+		userNode* n = new userNode(name, password, city);
 		temp = head;
 		while (temp != nullptr) {
-			if (temp->data == key) {
+			if (temp->name == keyName) {
 				temp2 = temp;
 				break;
 			}
@@ -57,7 +65,7 @@ public:
 		n->next = temp2->next;
 		temp2->next = n;
 	}
-	bool deleteFirstNode() // O(1)
+	bool deleteFirstUser() // O(1)
 	{
 		if (head == nullptr) {
 			return false;
@@ -68,19 +76,19 @@ public:
 		temp = nullptr;
 		return true;
 	}
-	bool deleteNode(int data) // O(n)
+	bool deleteUserNode(string keyName) // O(n)
 	{
 		temp = head;
 		if (head == nullptr) {
 			return false;
 		}
-		if (temp->data == data) {
+		if (temp->name == keyName) {
 			temp2 = temp;
 			head = temp->next;
 		}
 		else {
 			while (temp->next != nullptr) {
-				if (temp->next->data == data) {
+				if (temp->next->name == keyName) {
 					break;
 				}
 				temp = temp->next;
@@ -102,7 +110,7 @@ public:
 		temp2 = nullptr;
 		return true;
 	}
-	bool deleteLastNode() // O(n)
+	bool deleteLastUser() // O(n)
 	{
 		if (head == nullptr) {
 			return false;
@@ -124,29 +132,13 @@ public:
 		return true;
 
 	}
-	bool search(int data) //O(n)
-	{
-		temp = head;
-		if (head == nullptr) {
-			cout << "Not Found" << endl;
-			return false;
-		}
-		while (temp != nullptr) {
-			if (temp->data == data) {
-				cout << "Found" << endl;
-				return true;
-			}
-			temp = temp->next;
-		}
-		cout << "Not Found" << endl;
-		return false;
-	}
 	void display() // O(n)
 	{
 		temp = head;
 		if (head != nullptr) {
 			while (temp != nullptr) {
-				cout << temp->data << " ";
+				cout << temp->name << " ";
+				cout << temp->city << " ";
 				temp = temp->next;
 			}
 			cout << endl;
@@ -155,7 +147,7 @@ public:
 			cout << "No Elements" << endl;
 		}
 	}
-	~LinkedList()
+	~userList()
 	{
 		temp = head;
 		while (temp != nullptr) {
@@ -173,7 +165,7 @@ public:
 
 
 int main() {
-	cout << "Hello world";
+	
 	system("pause");
 	return 0;
 }
