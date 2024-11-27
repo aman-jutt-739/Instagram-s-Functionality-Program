@@ -24,6 +24,14 @@ public:
 	string friendName;
 	Friend relation;
 	friendNode* next;
+
+    friendNode(string name, string type, string status, friendNode* ptr)
+    {
+        friendName = name;
+        relation.relationshipType = type;
+        relation.status = status;
+        next = ptr;
+    }
 };
 
 class message
@@ -39,6 +47,12 @@ class notification
 public:
 	string content;
 	notification* next;
+
+    notification(string msg, notification* notifications)
+    {
+        content = msg;
+        next = notifications;
+    }
 };
 
 class friendRequest
@@ -46,6 +60,12 @@ class friendRequest
 public:
 	string fromUser;
 	friendRequest* next;
+
+    friendRequest(string name, friendRequest* toUser)
+    {
+        fromUser = name;
+        next = toUser;
+    }
 };
 
 class user
@@ -60,6 +80,20 @@ public:
 	notification* notifications;
 	friendRequest* friendRequests;
 	user* next;
+
+    user(string name, string password, string city, string login, user* users)
+    {
+        this->name = name;
+        this->password = password;
+        this->city = city;
+        this->lastLogin = login;
+        next = users;
+
+        posts = nullptr;
+        friends = nullptr;
+        notifications = nullptr;
+        friendRequests = nullptr;
+    }
 };
 
 class bstNode
@@ -77,6 +111,21 @@ public:
 		left = nullptr;
 		right = nullptr;
 	}
+};
+
+class userNode
+{
+public:
+    string username;
+    friendNode* friendList;
+    userNode* next;
+
+    userNode(string name, friendNode* ptr1, userNode* ptr2)
+    {
+        username = name;
+        friendList = ptr1;
+        next = ptr2;
+    }
 };
 
 class userSearch
@@ -148,12 +197,275 @@ public:
 	}
 };
 
+class graph
+{
+public:
+    userNode* head; 
+
+    graph()
+    {
+        head = nullptr;
+    }
+
+    void addFollower(string username, string followerName)
+    {
+        userNode* user = findOrCreateUser(username);
+        friendNode* newFollower = new friendNode(followerName, "Following", "Active", user->friendList);
+        user->friendList = newFollower;
+    }
+
+    friendNode* getFriends(string username)
+    {
+        userNode* user = findUser(username);
+        if (user)
+        {
+            return user->friendList; 
+        }
+        return nullptr;
+    }
+
+    void addFriend(string username, string friendName)
+    {
+        userNode* user = findOrCreateUser(username);
+        friendNode* newFriend = new friendNode(friendName, "Friend", "Active", user->friendList);
+        user->friendList = newFriend; 
+    }
+
+    userNode* findUser(string username)
+    {
+        userNode* temp = head;
+        while (temp && temp->username != username)
+        {
+            temp = temp->next;
+        }
+        return temp; 
+    }
+
+    userNode* findOrCreateUser(string username)
+    {
+        userNode* user = findUser(username);
+        if (!user)
+        {
+            user = new userNode(username, nullptr, head);
+            head = user; 
+        }
+        return user;
+    }
+};
+
+class userManager 
+{
+public:
+    user* users; 
+    userSearch searchTree; 
+    graph friendGraph;
+
+    userManager()
+    {
+        users = nullptr;
+    }
+
+
+    void signup(string name, string password, string city) 
+    {
+        if (searchTree.searchUser(searchTree.root, name)) 
+        {
+            cout << "Username already exists. Try another one.\n";
+            return;
+        }
+        if (password.length() < 6) 
+        {
+            cout << "Password must be at least 6 characters long.\n";
+            return;
+        }
+
+        user* newUser = new user(name, password, city, "", users);
+        users = newUser;
+        searchTree.root = searchTree.insert(searchTree.root, name, newUser);
+        cout << "User " << name << " signed up successfully!\n";
+    }
+
+    user* login(string name, string password) 
+    {
+        user* User = searchTree.searchUser(searchTree.root, name);
+        if (!User) 
+        {
+            cout << "Invalid username.\n";
+            return nullptr;
+        }
+
+        if (User->password != password) 
+        {
+            cout << "Invalid password.\n";
+            return nullptr;
+        }
+
+        time_t now = time(0);
+        char buffer[26];
+        ctime_s(buffer, sizeof(buffer), &now);
+        User->lastLogin = buffer;
+        cout << "Welcome, " << name << "!\n";
+        return User;
+    }
+
+    void resetPassword(string name, string securityAnswer)
+    {
+        user* User = searchTree.searchUser(searchTree.root, name);
+        if (!User) 
+        {
+            cout << "Invalid username.\n";
+            return;
+        }
+
+        string newPassword;
+        cout << "Enter new password: ";
+        cin >> newPassword;
+        while (newPassword.length() < 6)
+        {
+            cout << "Password must be 6 digits long: ";
+            cin >> newPassword;
+        }
+        User->password = newPassword;
+        cout << "Password reset successfully!\n";
+    }
+
+    void addPost(user* User, string content) 
+    {
+        time_t now = time(0);
+        char buffer[26];
+        ctime_s(buffer, sizeof(buffer), &now);
+        post* newPost = new post{ buffer, content, User->posts };
+        User->posts = newPost;
+    }
+
+    void viewTimeline(user* User)
+    {
+        post* Post = User->posts;
+        if (!Post) 
+        {
+            cout << "No posts to show.\n";
+            return;
+        }
+
+        cout << "Your Timeline:\n";
+        while (Post) 
+        {
+            cout << "[" << Post->dateTime << "] " << Post->content << "\n";
+            Post = Post->next;
+        }
+    }
+
+    void sendFriendRequest(user* fromUser, user* toUser) 
+    {
+        friendRequest* newRequest = new friendRequest(fromUser->name, toUser->friendRequests);
+        toUser->friendRequests = newRequest;
+
+        notification* newNotification = new notification(fromUser->name + " sent you a friend request.", toUser->notifications);
+        toUser->notifications = newNotification;
+
+        cout << "Friend request sent. \n";
+    }
+
+    void acceptFriendRequest(user* currentUser, user* friendUser)
+    {
+        friendRequest* prev = nullptr;
+        friendRequest* request = currentUser->friendRequests;
+
+        while (request)
+        {
+            if (request->fromUser == friendUser->name)
+            {
+                if (prev)
+                {
+                    prev->next = request->next;
+                }
+                else
+                {
+                    currentUser->friendRequests = request->next;
+                }
+                delete request;
+                break;
+            }
+            prev = request;
+            request = request->next;
+        }
+
+        friendNode* newFollower = new friendNode(currentUser->name, "Following", "Active", friendUser->friends);
+        friendUser->friends = newFollower;
+
+        
+        notification* newNotification = new notification(currentUser->name + " accepted your friend request.", friendUser->notifications);
+        friendUser->notifications = newNotification;
+
+        friendGraph.addFollower(currentUser->name, friendUser->name);
+
+        cout << "Friend request accepted.\n";
+    }
+
+    void viewNotifications(user* currentUser) 
+    {
+        if (!currentUser->notifications)
+        {
+            cout << "No notifications.\n";
+            return;
+        }
+
+        cout << "Notifications:\n";
+        notification* temp = currentUser->notifications;
+        while (temp) 
+        {
+            cout << "- " << temp->content << "\n";
+            temp = temp->next;
+        }
+    }
+
+    void viewFriendRequests(user* currentUser) 
+    {
+        if (!currentUser->friendRequests) 
+        {
+            cout << "No friend requests.\n";
+            return;
+        }
+
+        cout << "Friend Requests:\n";
+        friendRequest* temp = currentUser->friendRequests;
+        while (temp)
+        {
+            cout << "- From: " << temp->fromUser << "\n";
+            temp = temp->next;
+        }
+    }
+
+    void viewFollowers(user* currentUser)
+    {
+        if (!currentUser)
+        {
+            cout << "Please log in first.\n";
+            return;
+        }
+
+        friendNode* friends = friendGraph.getFriends(currentUser->name);
+        if (!friends)
+        {
+            cout << "You have no followers yet.\n";
+            return;
+        }
+
+        cout << "Your Followers:\n";
+        while (friends)
+        {
+            cout << "- " << friends->friendName << "\n";
+            friends = friends->next;
+        }
+    }
+};
+
 int main() 
 {
-    //UserManager userManager;
+    userManager UserManager;
 
     int choice;
-    //User* currentUser = nullptr;
+    user* currentUser = nullptr;
 
     do
     {
@@ -176,133 +488,175 @@ int main()
 
         switch (choice)
         {
+        case 0:
+        {
+            cout << "Goodbye!\n";
+            break;
+        }
+
         case 1:
-            string name, password, city, answer;
+        {
+            string name, password, city;
             cout << "Enter username: ";
             cin >> name;
             cout << "Enter password: ";
             cin >> password;
             cout << "Enter city: ";
             cin >> city;
-            //userManager.signup(name, password, city, answer);
+            UserManager.signup(name, password, city);
             break;
+        }
 
         case 2:
+        {
             string name, password;
             cout << "Enter username: ";
             cin >> name;
             cout << "Enter password: ";
             cin >> password;
-            //currentUser = userManager.login(name, password);
+            currentUser = UserManager.login(name, password);
             break;
+        }
 
         case 3:
+        {
             string name, answer;
             cout << "Enter username: ";
             cin >> name;
             cout << "Enter security answer: ";
             cin >> answer;
-            //userManager.resetPassword(name, answer);
+            UserManager.resetPassword(name, answer);
             break;
+        }
 
         case 4:
-            //if (!currentUser)
         {
-            cout << "Please log in first.\n";
-            continue;
+            if (!currentUser)
+            {
+                cout << "Please log in first.\n";
+                continue;
+            }
+            string friendName;
+            cout << "Enter username to send friend request: ";
+            cin >> friendName;
+            user* friendUser = UserManager.searchTree.searchUser(UserManager.searchTree.root, friendName);
+            if (!friendUser)
+            {
+                cout << "User not found.\n";
+                continue;
+            }
+            UserManager.sendFriendRequest(currentUser, friendUser);
+            break;
         }
-        string friendName;
-        cout << "Enter username to send friend request: ";
-        cin >> friendName;
-        //User* friendUser = userManager.searchTree.search(userManager.searchTree.root, friendName);
-        //if (!friendUser)
-        {
-            cout << "User not found.\n";
-            continue;
-        }
-        //userManager.sendFriendRequest(currentUser, friendUser);
-        break;
 
         case 5:
-            //userManager.viewNotifications(currentUser);
+        {
+            UserManager.viewNotifications(currentUser);
             break;
+        }
 
         case 6:
-            //if (!currentUser)
         {
-            cout << "Please log in first.\n";
-            continue;
+            if (!currentUser)
+            {
+                cout << "Please log in first.\n";
+                continue;
+            }
+            string content;
+            cin.ignore();
+            cout << "Enter post content: ";
+            getline(cin, content);
+            UserManager.addPost(currentUser, content);
+            break;
         }
-        string content;
-        cin.ignore();
-        cout << "Enter post content: ";
-        getline(cin, content);
-        //userManager.addPost(currentUser, content);
-        break;
 
         case 7:
-            //if (!currentUser) 
         {
-            cout << "Please log in first.\n";
-            continue;
+            if (!currentUser) 
+            {
+                cout << "Please log in first.\n";
+                continue;
+            }
+            UserManager.viewTimeline(currentUser);
+            break;
         }
-        //userManager.viewTimeline(currentUser);
-        break;
 
         case 8:
-            //if (!currentUser) 
         {
-            cout << "Please log in first.\n";
-            continue;
+            if (!currentUser) 
+            {
+                cout << "Please log in first.\n";
+                continue;
+            }
+            UserManager.viewFriendRequests(currentUser);
+            break;
         }
-        //userManager.viewFriendRequests(currentUser);
-        break;
 
         case 9:
-            //if (!currentUser) 
         {
-            cout << "Please log in first.\n";
-            continue;
+            if (!currentUser) 
+            {
+                cout << "Please log in first.\n";
+                continue;
+            }
+            string friendName;
+            cout << "Enter username to accept friend request: ";
+            cin >> friendName;
+            user* friendUser = UserManager.searchTree.searchUser(UserManager.searchTree.root, friendName);
+            if (!friendUser) 
+            {
+                cout << "User not found.\n";
+                continue;
+            }
+            UserManager.acceptFriendRequest(currentUser, friendUser);
+            break;
         }
-        string friendName;
-        cout << "Enter username to accept friend request: ";
-        cin >> friendName;
-        //User* friendUser = userManager.searchTree.search(userManager.searchTree.root, friendName);
-        //if (!friendUser) 
-        {
-            cout << "User not found.\n";
-            continue;
-        }
-        //userManager.acceptFriendRequest(currentUser, friendUser);
-        break;
 
         case 10:
-            //if (!currentUser) 
         {
-            cout << "Please log in first.\n";
-            continue;
+            if (!currentUser) 
+            {
+                cout << "Please log in first.\n";
+                continue;
+            }
+            UserManager.viewFollowers(currentUser);
+            break;
         }
-        //userManager.viewFollowers(currentUser);
-        break;
 
         case 11:
+        {
             string query;
-            cout << "Enter search query: ";
+            cout << "Enter username to search: ";
             cin >> query;
-            //userManager.searchUsers(query);
+            user* foundUser = UserManager.searchTree.searchUser(UserManager.searchTree.root, query);
+
+            if (foundUser)
+            {
+                cout << "User found:\n";
+                cout << "Name: " << foundUser->name << "\n";
+                cout << "City: " << foundUser->city << "\n";
+                cout << "Last Login: " << foundUser->lastLogin << "\n";
+            }
+            else
+            {
+                cout << "User not found.\n";
+            }
             break;
+        }
 
         case 12:
-            //currentUser = nullptr;
+        {
+            currentUser = nullptr;
             cout << "Logged out successfully.\n";
             break;
-
-        case 0:
-            cout << "Goodbye!\n";
-            break;
+        }
 
         default:
+        {
             cout << "Invalid choice.\n";
+            break;
+        }
+
         }
     }while (choice != 0);
 
