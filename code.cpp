@@ -6,6 +6,59 @@ using namespace std;
 class user;
 class friendRequestList;
 class friendList;
+
+class messageNode
+{
+public:
+    string dateTime;
+    string content;
+    messageNode* next;
+    messageNode(string dateTime, string content) {
+        this->dateTime = dateTime;
+        this->content = content;
+        next = nullptr;
+    }
+};
+class messageList {
+public:
+    messageNode* top;
+    messageList() {
+        top = nullptr;
+    }
+    bool isempty() {
+        if (top == nullptr) {
+            return true;
+        }
+        return false;
+    }
+    void push(string dateTime, string content) {
+
+        messageNode* n = new messageNode(dateTime, content);
+        n->next = top;
+        top = n;
+
+    }
+    void pop(string dateTime, string content) {
+        if (!isempty()) {
+            messageNode* temp = top;
+            string data = temp->content;
+            content = data;
+            data = temp->dateTime;
+            dateTime = data;
+            top = top->next;
+            delete temp;
+            temp = nullptr;
+
+        }
+        else {
+            cout << "Node is empty" << endl;
+        }
+    }
+
+};
+
+
+
 class postNode
 {
 public:
@@ -193,11 +246,13 @@ class relationNode {
 public:
     user* users;
     relationNode* next;
+    messageList* mList;
     string relationship;
     string status;
     relationNode(user* users) {
         this->users = users;
         next = nullptr;
+        mList = nullptr;
     }
 };
 class user {
@@ -384,6 +439,7 @@ public:
         friends[first]->next = fNode;
         fNode->relationship = "Request Send";
         fNode->status = "Pending";
+        return true;
     }
     void makeFriends(user* userA, user* userB) {
         int first = index(userA);
@@ -426,17 +482,18 @@ public:
             temp = temp->next;
         }
     }
-    bool isFriend(user* userA, user* userB) {
+    relationNode* isFriend(user* userA, user* userB) {
         int first = index(userA);
         int second = index(userB);
         relationNode* temp = friends[first];
         while (temp != nullptr) {
             if (temp->users->name == friends[second]->users->name) {
-                return true;
+                return friends[second];
+
             }
             temp = temp->next;
         }
-        return false;
+        return nullptr;
     }
 
 };
@@ -578,6 +635,21 @@ public:
         {
             showPosts(temp->users);
             temp = temp->next;
+        }
+    }
+    void sendMessgae(user* userA, user* userB, string content) {
+        if (Relations->isFriend(userA, userB) && Relations->isFriend(userB, userA)) {
+            time_t now = time(0);
+            char buffer[26];
+            ctime_s(buffer, sizeof(buffer), &now);
+            Relations->isFriend(userA, userB)->mList->push(buffer, content);
+            cout << "Sent" << endl;
+            string msg = userA->name + " Sent You a Message at ";
+            userB->nList->push(msg);
+        }
+        else {
+            cout << "NOT Mutual Friends" << endl;
+            return;
         }
     }
 
@@ -786,7 +858,6 @@ int main() {
 
     return 0;
 }
-
 //int main() {
 //    userManager UserManager(1000);
 //    int choice;
