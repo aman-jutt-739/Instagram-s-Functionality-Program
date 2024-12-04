@@ -1,0 +1,6 @@
+# Ignore Visual Studio files
+*.sln
+*.vcxproj*
+*.user
+.vs/
+x64/
