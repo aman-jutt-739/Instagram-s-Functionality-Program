@@ -1,6 +1,5 @@
 #include<iostream>
 #include<string>
-#include<cmath>
 using namespace std;
 
 class user;
@@ -23,45 +22,51 @@ public:
 class messageQueue {
     messageNode* front;
     messageNode* rear;
+    int numMsg;
 public:
     messageQueue()
     {
+        numMsg = 0;
         front = nullptr;
         rear = nullptr;
     }
     void enqueue(messageNode msg)
     {
         messageNode* newNode = new messageNode(msg.dateTime, msg.content);
-        if (front == nullptr)
+        if (numMsg == 0)
         {
             front = newNode;
             rear = newNode;
+            numMsg++;
             return;
         }
         rear->next = newNode;
         rear = newNode;
+        numMsg++;
     }
     void dequeue(messageNode& msg)
     {
-        if (front == nullptr)
+        if (numMsg == 0)
         {
             return;
         }
-        if (front == rear)
+        if (numMsg == 1)
         {
             msg = *front;
             front = nullptr;
             rear = nullptr;
+            numMsg--;
             return;
         }
         messageNode* temp = front;
         msg = *front;
         front = front->next;
         delete temp;
+        numMsg--;
     }
     void messagePop()
     {
-        if (front == nullptr)
+        if (numMsg == 0)
         {
             return;
         }
@@ -278,9 +283,6 @@ public:
             temp = nullptr;
             numPeople--;
         }
-        else {
-            cout << "Quene is Empty" << endl;
-        }
     }
     ~friendRequestsList()
     {
@@ -319,7 +321,7 @@ public:
     postList* pList;
     string lastLogin;
     notificationsList* nList;
-    messageQueue* msgQueue;
+    messageQueue msgQueue;
     user* left;
     user* right;
     user(string name, string password, string city, string login) {
@@ -331,7 +333,6 @@ public:
         right = nullptr;
         nList = nullptr;
         pList = nullptr;
-        msgQueue = nullptr;
     }
 };
 class friendList {
@@ -496,7 +497,7 @@ public:
         relationNode* temp = friends[first];
         while (temp != nullptr) {
             if (temp->users->name == friends[second]->users->name) {
-                //temp->relationship = "Not Friend";
+                temp->relationship = "Not Friend";
                 temp->status = "Blocked";
                 return;
             }
@@ -686,7 +687,7 @@ public:
             string msg = userA->name + " Sent You a Message at " + buffer;
             userB->nList->push(msg);
             messageNode msgNode(buffer, content);
-            userB->msgQueue->enqueue(msgNode);
+            userB->msgQueue.enqueue(msgNode);
         }
         else {
             cout << "NOT Mutual Friends" << endl;
@@ -697,7 +698,7 @@ public:
     {
         cout << "Messages: \n";
         Relations->isFriend(userB, userA)->mList->displayMessages();
-        userA->msgQueue->messagePop();
+        userA->msgQueue.messagePop();
     }
     void showSuggestions(user* userA) {
         bool flag = false;
@@ -716,8 +717,8 @@ public:
         }
         suggestiondfs(users->left, userNode, flag);
         suggestiondfs(users->right, userNode, flag);
-        if (!Relations->isFriend(users, userNode)) {
-            if (users != userNode)
+        if (!Relations->isFriend(userNode, users)) {
+            if (users->name != userNode->name)
             {
                 cout << users->name << endl;
                 flag = true;
@@ -740,12 +741,13 @@ int main() {
         cout << "3. Exit\n";
         cout << "Enter your choice: ";
         cin >> choice;
+        cin.ignore();
 
         switch (choice) {
         case 1: {
             string name, password, city;
             cout << "Enter username: ";
-            cin >> name;
+            getline(cin, name);
             cout << "Enter password (at least 6 characters): ";
             cin >> password;
             cout << "Enter city: ";
@@ -756,7 +758,7 @@ int main() {
         case 2: {
             string name, password;
             cout << "Enter username: ";
-            cin >> name;
+            getline(cin, name);
             cout << "Enter password: ";
             cin >> password;
             loggedInUser = manager.login(name, password);
@@ -783,16 +785,13 @@ int main() {
                     cout << "16. Log out\n";
                     cout << "Enter your choice: ";
                     cin >> choice2;
+                    cin.ignore();
                     switch (choice2)
                     {
                     case 1: {
-                        if (!loggedInUser) {
-                            cout << "Please log in first.\n";
-                            break;
-                        }
                         string friendName;
                         cout << "Enter username to send friend request to: ";
-                        cin >> friendName;
+                        getline(cin, friendName);
                         user* friendUser = manager.searchUser(manager.users, friendName);
                         if (friendUser) {
                             manager.sendFriendRequest(loggedInUser, friendUser);
@@ -803,10 +802,6 @@ int main() {
                         break;
                     }
                     case 2: {
-                        if (!loggedInUser) {
-                            cout << "Please log in first.\n";
-                            break;
-                        }
                         user* sender = nullptr;
                         loggedInUser->frList->dequene(sender);
                         if (sender) {
@@ -818,10 +813,6 @@ int main() {
                         break;
                     }
                     case 3: {
-                        if (!loggedInUser) {
-                            cout << "Please log in first.\n";
-                            break;
-                        }
                         user* sender = nullptr;
                         loggedInUser->frList->dequene(sender);
                         if (sender) {
@@ -833,19 +824,11 @@ int main() {
                         break;
                     }
                     case 4: {
-                        if (!loggedInUser) {
-                            cout << "Please log in first.\n";
-                            break;
-                        }
                         cout << "Your Friends: ";
                         loggedInUser->fList->display();
                         break;
                     }
                     case 5: {
-                        if (!loggedInUser) {
-                            cout << "Please log in first.\n";
-                            break;
-                        }
                         cout << "Friend Requests:\n";
                         requestsNode* temp = loggedInUser->frList->front;
                         while (temp) {
@@ -855,13 +838,9 @@ int main() {
                         break;
                     }
                     case 6: {
-                        if (!loggedInUser) {
-                            cout << "Please log in first.\n";
-                            break;
-                        }
                         string friendName;
                         cout << "Enter username to unfriend: ";
-                        cin >> friendName;
+                        getline(cin, friendName);
                         user* friendUser = manager.searchUser(manager.users, friendName);
                         if (friendUser) {
                             manager.unFriend(loggedInUser, friendUser);
@@ -872,13 +851,9 @@ int main() {
                         break;
                     }
                     case 7: {
-                        if (!loggedInUser) {
-                            cout << "Please log in first.\n";
-                            break;
-                        }
                         string friendName;
                         cout << "Enter username to block: ";
-                        cin >> friendName;
+                        getline(cin, friendName);
                         user* friendUser = manager.searchUser(manager.users, friendName);
                         if (friendUser) {
                             manager.blocKFriend(loggedInUser, friendUser);
@@ -888,11 +863,7 @@ int main() {
                         }
                         break;
                     }
-                    case 8: {  // View Notifications
-                        if (!loggedInUser) {
-                            cout << "Please log in first.\n";
-                            break;
-                        }
+                    case 8: { 
                         cout << "Notifications:\n";
                         notificationNode* temp = loggedInUser->nList->top;
                         while (temp) {
@@ -902,43 +873,26 @@ int main() {
                         break;
                     }
                     case 9: {
-                        if (!loggedInUser) {
-                            cout << "Please log in first.\n";
-                            break;
-                        }
                         string content;
                         cout << "Enter Content: " << endl;
-                        cin >> content;
-                        cin.ignore();
+                        getline(cin, content);
                         manager.createPost(loggedInUser, content);
                         break;
                     }
                     case 10: {
-                        if (!loggedInUser) {
-                            cout << "Please log in first.\n";
-                            break;
-                        }
                         cout << "Posts" << endl;
                         manager.showTimeline(loggedInUser);
                         break;
                     }
                     case 11: {
-                        if (!loggedInUser) {
-                            cout << "Please log in first.\n";
-                            break;
-                        }
                         cout << "Your Posts" << endl;
                         manager.showPosts(loggedInUser);
                         break;
                     }
                     case 12: {
-                        if (!loggedInUser) {
-                            cout << "Please log in first.\n";
-                            break;
-                        }
                         string name, message;
                         cout << "Enter friend name: ";
-                        cin >> name;
+                        getline(cin, name);
                         user* friendUser = manager.searchUser(manager.users, name);
                         if (friendUser == nullptr)
                         {
@@ -947,7 +901,7 @@ int main() {
                         else
                         {
                             cout << "Enter message: ";
-                            cin >> message;
+                            getline(cin, message);
                             manager.sendMessgae(loggedInUser, friendUser, message);
                         }
                         break;
@@ -955,7 +909,7 @@ int main() {
                     case 13: {
                         string name;
                         cout << "Enter name of friend to see message stack: ";
-                        cin >> name;
+                        getline(cin, name);
                         user* friendNode = manager.searchUser(manager.users, name);
                         if (friendNode == nullptr)
                         {
@@ -970,7 +924,7 @@ int main() {
                     case 14: {
                         string name;
                         cout << "Enter name of user to be searched: ";
-                        cin >> name;
+                        getline(cin, name);
                         user* userNode = manager.searchUser(manager.users, name);
                         if (userNode == nullptr)
                         {
