@@ -496,7 +496,7 @@ public:
         relationNode* temp = friends[first];
         while (temp != nullptr) {
             if (temp->users->name == friends[second]->users->name) {
-                temp->relationship = "Not Friend";
+                //temp->relationship = "Not Friend";
                 temp->status = "Blocked";
                 return;
             }
@@ -599,6 +599,7 @@ public:
         time_t now = time(0);
         char buffer[26];
         ctime_s(buffer, sizeof(buffer), &now);
+        buffer[24] = '\0';
         tempUser->lastLogin = buffer;
         cout << "Welcome, " << name << "!" << endl;
         return tempUser;
@@ -648,6 +649,7 @@ public:
         time_t now = time(0);
         char buffer[26];
         ctime_s(buffer, sizeof(buffer), &now);
+        buffer[24] = '\0';
         userA->pList->push(buffer, content);
         cout << "Posted" << endl;
     }
@@ -678,9 +680,9 @@ public:
             time_t now = time(0);
             char buffer[26];
             ctime_s(buffer, sizeof(buffer), &now);
+            buffer[24] = '\0';
             Relations->isFriend(userA, userB)->mList->push(buffer, content);
             cout << "Sent" << endl;
-            buffer[24] = '\0';
             string msg = userA->name + " Sent You a Message at " + buffer;
             userB->nList->push(msg);
             messageNode msgNode(buffer, content);
@@ -696,6 +698,31 @@ public:
         cout << "Messages: \n";
         Relations->isFriend(userB, userA)->mList->displayMessages();
         userA->msgQueue->messagePop();
+    }
+    void showSuggestions(user* userA) {
+        bool flag = false;
+        cout << "Friend Suggestions: \n";
+        suggestiondfs(users, userA, flag);
+        if (flag == false)
+        {
+            cout << "No friend suggestions to show\n";
+        }
+    }
+    void suggestiondfs(user* users, user* userNode, bool& flag)
+    {
+        if (!users)
+        {
+            return;
+        }
+        suggestiondfs(users->left, userNode, flag);
+        suggestiondfs(users->right, userNode, flag);
+        if (!Relations->isFriend(users, userNode)) {
+            if (users != userNode)
+            {
+                cout << users->name << endl;
+                flag = true;
+            }
+        }
     }
 };
 
@@ -752,7 +779,8 @@ int main() {
                     cout << "12. Send messages\n";
                     cout << "13. Show user messages\n";
                     cout << "14. Search Users\n";
-                    cout << "15. Log out\n";
+                    cout << "15. Friend Suggestions\n";
+                    cout << "16. Log out\n";
                     cout << "Enter your choice: ";
                     cin >> choice2;
                     switch (choice2)
@@ -955,6 +983,10 @@ int main() {
                         break;
                     }
                     case 15: {
+                        manager.showSuggestions(loggedInUser);
+                        break;
+                    }
+                    case 16: {
                         loggedInUser = nullptr;
                         cout << "Logged out successfully \n";
                         break;
@@ -965,7 +997,7 @@ int main() {
                     }
                     }
                     system("pause");
-                } while (choice2 != 15);
+                } while (choice2 != 16);
             }
             break;
         }
