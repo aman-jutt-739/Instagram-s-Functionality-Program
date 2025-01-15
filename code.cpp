@@ -143,12 +143,16 @@ public:
 };
 class postList {
 public:
-    postNode* top;
+    //postNode* top;
+    postNode* front;
+    postNode* rear;
     postList() {
-        top = nullptr;
+        // top = nullptr;
+        front = nullptr;
+        rear = nullptr;
     }
     bool isempty() {
-        if (top == nullptr) {
+        if (front == nullptr) {
             return true;
         }
         return false;
@@ -156,24 +160,41 @@ public:
     void push(string dateTime, string content) {
 
         postNode* n = new postNode(dateTime, content);
-        n->next = top;
-        top = n;
-
+        //n->next = top;
+        //top = n;
+        if (front == nullptr)
+        {
+            front = n;
+            rear = n;
+            return;
+        }
+        rear->next = n;
+        rear = n;
     }
     void pop(string dateTime, string content) {
         if (!isempty()) {
-            postNode* temp = top;
+            postNode* temp = front;
             string data = temp->content;
             content = data;
             data = temp->dateTime;
             dateTime = data;
-            top = top->next;
+            //top = top->next;
+            //delete temp;
+            //temp = nullptr;
             delete temp;
-            temp = nullptr;
-
+            front = nullptr;
+            rear = nullptr;
         }
         else {
-            cout << "Node is empty" << endl;
+            //cout << "Node is empty" << endl;
+            postNode* temp = front;
+            string data = temp->content;
+            content = data;
+            data = temp->dateTime;
+            dateTime = data;
+            front = front->next;
+            delete temp;
+            temp = nullptr;
         }
     }
 };
@@ -232,7 +253,6 @@ public:
         this->friendUser = friendUser;
         next = nullptr;
     }
-
 };
 
 class requestsNode {
@@ -532,7 +552,6 @@ public:
         }
         return nullptr;
     }
-
 };
 class userManager {
 public:
@@ -655,7 +674,7 @@ public:
         cout << "Posted" << endl;
     }
     void showPosts(user* userA) {
-        postNode* temp = userA->pList->top;
+        postNode* temp = userA->pList->front;
         while (temp) {
             cout << "Posted by " << userA->name << " at " << temp->dateTime << endl;
             cout << temp->content << endl;
